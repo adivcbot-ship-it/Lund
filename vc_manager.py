@@ -1,5 +1,7 @@
 """
 vc_manager.py — Voice Chat Connection Controller
+Manages source VC (silent listener) and target VCs (broadcast mode).
+Auto-reconnect with exponential backoff on unexpected disconnections.
 """
 import asyncio
 import io
@@ -15,24 +17,39 @@ from audio_bridge import AudioBridge
 from database import Database
 from config import Config
 
-# ---------- FIX: Dynamic import for pytgcalls exceptions ----------
-from pytgcalls.exceptions import NoActiveGroupCall, NotInGroupCallError
+# ---------- DYNAMIC IMPORTS FOR pytgcalls EXCEPTIONS ----------
+import pytgcalls.exceptions as exc_mod
 
-# Try to import AlreadyJoinedError; if not found, search for any exception with "Already" or "Joined"
-try:
-    from pytgcalls.exceptions import AlreadyJoinedError
-except ImportError:
-    import pytgcalls.exceptions as exc_mod
-    AlreadyJoinedError = None
-    for name in dir(exc_mod):
-        if "Already" in name or "Joined" in name:
-            AlreadyJoinedError = getattr(exc_mod, name)
-            break
-    if AlreadyJoinedError is None:
-        # Fallback: define a dummy exception class (won't be raised, but needed for except blocks)
-        class AlreadyJoinedError(Exception):
-            pass
-# -------------------------------------------------------------------
+def _get_exception(name, fallback_names=None):
+    """Try to get exception class by name, fallback to alternatives, or create dummy."""
+    if fallback_names is None:
+        fallback_names = []
+    if hasattr(exc_mod, name):
+        return getattr(exc_mod, name)
+    for fb in fallback_names:
+        if hasattr(exc_mod, fb):
+            return getattr(exc_mod, fb)
+    # If nothing found, define a dummy exception (won't be raised, but needed for except blocks)
+    class DummyException(Exception):
+        pass
+    DummyException.__name__ = name
+    return DummyException
+
+AlreadyJoinedError = _get_exception(
+    "AlreadyJoinedError",
+    fallback_names=["AlreadyJoined", "GroupCallAlreadyJoined", "AlreadyInGroupCall"]
+)
+
+NoActiveGroupCall = _get_exception(
+    "NoActiveGroupCall",
+    fallback_names=["NoActiveGroupCall", "GroupCallNotFound"]
+)
+
+NotInGroupCallError = _get_exception(
+    "NotInGroupCallError",
+    fallback_names=["NotInCallError", "NotInGroupCall", "NotInCall"]
+)
+# -------------------------------------------------------------
 
 
 class VCManager:
