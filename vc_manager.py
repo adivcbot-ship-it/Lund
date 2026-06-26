@@ -11,7 +11,12 @@ from typing import Dict, Optional, Set, Tuple
 from pyrogram import Client
 from pytgcalls import PyTgCalls
 from pytgcalls.types import AudioQuality, MediaStream
-from pytgcalls.exceptions import AlreadyJoinedError, NoActiveGroupCall, NotInGroupCallError
+try:
+    from pytgcalls.exceptions import AlreadyJoinedError, NoActiveGroupCall, NotInGroupCallError
+except ImportError:
+    # Agar AlreadyJoinedError nahi hai toh fallback
+    from pytgcalls.exceptions import PyTgCallsException as AlreadyJoinedError
+    from pytgcalls.exceptions import NoActiveGroupCall, NotInGroupCallError
 from loguru import logger
 
 from audio_bridge import AudioBridge
