@@ -11,13 +11,22 @@ from typing import Dict, Optional, Set, Tuple
 from pyrogram import Client
 from pytgcalls import PyTgCalls
 from pytgcalls.types import AudioQuality, MediaStream
-# --- FIXED IMPORT ---
+from pytgcalls.exceptions import NoActiveGroupCall, NotInGroupCallError
+
+# Dynamically find AlreadyJoinedError (name might be different)
 try:
-    from pytgcalls.exceptions import AlreadyJoinedError, NoActiveGroupCall, NotInGroupCallError
+    from pytgcalls.exceptions import AlreadyJoinedError
 except ImportError:
-    from pytgcalls.exceptions import PyTgCallsException as AlreadyJoinedError
-    from pytgcalls.exceptions import NoActiveGroupCall, NotInGroupCallError
-# --------------------
+    import pytgcalls.exceptions as exc_mod
+    AlreadyJoinedError = None
+    for name in dir(exc_mod):
+        if "Already" in name or "Joined" in name:
+            AlreadyJoinedError = getattr(exc_mod, name)
+            break
+    if AlreadyJoinedError is None:
+        class AlreadyJoinedError(Exception):
+            pass
+
 from loguru import logger
 
 from audio_bridge import AudioBridge
