@@ -1,6 +1,6 @@
 kurigram
 TgCrypto
-py-tgcalls
+py-tgcalls @ git+https://github.com/pytgcalls/pytgcalls.git@v4.1.1
 pymongo[srv]>=4.6.0
 python-dotenv>=1.0.0
 loguru>=0.7.2
