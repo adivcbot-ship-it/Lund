@@ -104,7 +104,7 @@ class VCBridgeBot:
         on_left fires when any call is ended/kicked.
         """
 
-        @self.calls.on_raw_update()
+        @self.calls.on_update()
         async def _on_raw_update(client, update, *args):
             """
             Intercept raw audio frames from the source VC.
