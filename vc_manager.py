@@ -1,7 +1,5 @@
 """
 vc_manager.py — Voice Chat Connection Controller
-Manages source VC (silent listener) and target VCs (broadcast mode).
-Auto-reconnect with exponential backoff on unexpected disconnections.
 """
 import asyncio
 import io
@@ -11,9 +9,16 @@ from typing import Dict, Optional, Set, Tuple
 from pyrogram import Client
 from pytgcalls import PyTgCalls
 from pytgcalls.types import AudioQuality, MediaStream
+from loguru import logger
+
+from audio_bridge import AudioBridge
+from database import Database
+from config import Config
+
+# ---------- FIX: Dynamic import for pytgcalls exceptions ----------
 from pytgcalls.exceptions import NoActiveGroupCall, NotInGroupCallError
 
-# Dynamically find AlreadyJoinedError (name might be different)
+# Try to import AlreadyJoinedError; if not found, search for any exception with "Already" or "Joined"
 try:
     from pytgcalls.exceptions import AlreadyJoinedError
 except ImportError:
@@ -24,14 +29,10 @@ except ImportError:
             AlreadyJoinedError = getattr(exc_mod, name)
             break
     if AlreadyJoinedError is None:
+        # Fallback: define a dummy exception class (won't be raised, but needed for except blocks)
         class AlreadyJoinedError(Exception):
             pass
-
-from loguru import logger
-
-from audio_bridge import AudioBridge
-from database import Database
-from config import Config
+# -------------------------------------------------------------------
 
 
 class VCManager:
